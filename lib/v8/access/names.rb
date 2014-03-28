@@ -6,11 +6,12 @@ class V8::Access
     end
 
     def get(obj, name, &dontintercept)
-      methods = accessible_names(obj)
-      if methods.include?(name)
+      if special?(name)
+        yield
+      elsif obj.respond_to?(name)
         method = obj.method(name)
         method.arity == 0 ? method.call : method.unbind
-      elsif obj.respond_to?(:[]) && !special?(name)
+      elsif obj.respond_to?(:[])
         obj.send(:[], name, &dontintercept)
       else
         yield
@@ -19,8 +20,7 @@ class V8::Access
 
     def set(obj, name, value, &dontintercept)
       setter = name + "="
-      methods = accessible_names(obj, true)
-      if methods.include?(setter)
+      if obj.respond_to?(setter)
         obj.send(setter, value)
       elsif obj.respond_to?(:[]=) && !special?(name)
         obj.send(:[]=, name, value, &dontintercept)
